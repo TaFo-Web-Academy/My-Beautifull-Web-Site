@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mustafo | Creative Developer</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --primary: #FF9F43;
+        --purple: #6C5CE7;
+        --bg-color: #F9F3E8;
+        --text-dark: #2D2D2D;
+        --text-gray: #6C6C6C;
+        --white: #ffffff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+        font-family: 'Outfit', sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-dark);
+        overflow-x: hidden;
+    }
+
+    /* --- CANVAS --- */
+    #canvas-container {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100vh;
+        z-index: 0; pointer-events: none;
+    }
+
+    /* --- UI --- */
+    .logo {
+        position: fixed; top: 40px; left: 60px;
+        width: 50px; height: 50px;
+        background: var(--text-dark); color: white;
+        display: flex; justify-content: center; align-items: center;
+        font-weight: 900; font-size: 24px; border-radius: 12px;
+        z-index: 100; cursor: pointer;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .logo:hover { transform: scale(1.1); }
+
+    .menu-toggle {
+        position: fixed; top: 40px; right: 60px;
+        width: 50px; height: 50px;
+        background: var(--primary); color: white;
+        border: none; border-radius: 12px; cursor: pointer; z-index: 200;
+        display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;
+        box-shadow: 0 10px 20px rgba(255, 159, 67, 0.3); transition: transform 0.2s;
+    }
+    .menu-toggle:hover { transform: scale(1.05); }
+    .menu-toggle span { width: 24px; height: 3px; background: white; border-radius: 2px; transition: 0.3s; }
+    body.menu-open .menu-toggle span:nth-child(1) { transform: rotate(45deg) translate(6px, 6px); }
+    body.menu-open .menu-toggle span:nth-child(2) { opacity: 0; }
+    body.menu-open .menu-toggle span:nth-child(3) { transform: rotate(-45deg) translate(6px, -6px); }
+
+    .side-menu {
+        position: fixed; top: 0; right: 0; width: 40%; max-width: 500px; height: 100vh;
+        background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); z-index: 150;
+        transform: translateX(100%); transition: transform 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+        display: flex; flex-direction: column; justify-content: center; padding: 60px;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+    }
+    body.menu-open .side-menu { transform: translateX(0); }
+    .nav-links a { display: block; font-size: 2.5rem; font-weight: 800; color: var(--text-dark); text-decoration: none; margin-bottom: 20px; transition: 0.3s; cursor: pointer; }
+    .nav-links a:hover { color: var(--primary); transform: translateX(10px); }
+
+    /* --- CONTENT --- */
+    main { position: relative; z-index: 10; width: 100%; }
+
+    /* 1. HERO */
+    .section-hero { height: 100vh; width: 100%; display: flex; align-items: center; padding-left: 8%; }
+    .hero-content { max-width: 550px; pointer-events: auto; }
+    
+    h1 {
+        font-size: clamp(3.5rem, 6vw, 6rem);
+        line-height: 0.95; 
+        margin-bottom: 25px; 
+        color: var(--text-dark); 
+        letter-spacing: -2px; 
+        font-weight: 900;
+    }
+    .name-highlight { display: block; margin-top: 5px; }
+
+    p { font-size: 1.25rem; color: var(--text-gray); margin-bottom: 40px; line-height: 1.6; max-width: 90%; }
+    
+    .cta-btn { 
+        padding: 20px 50px; background: var(--primary); color: white; 
+        border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 700; 
+        cursor: pointer; box-shadow: 0 15px 35px rgba(255, 159, 67, 0.4); 
+        transition: transform 0.2s; 
+    }
+    .cta-btn:hover { transform: translateY(-5px); }
+
+    /* 2. SKILLS */
+    .section-skills {
+        min-height: 100vh; width: 100%; display: flex; align-items: center; padding: 0 5%;
+        background: linear-gradient(135deg, #6C5CE7 0%, #FF9F43 100%);
+        box-shadow: 0 -20px 50px rgba(0,0,0,0.1); position: relative; z-index: 20;
+    }
+    .col-left { width: 50%; opacity: 0; transform: translateX(-50px); transition: all 1s ease; padding-right: 40px; }
+    .col-right { width: 50%; opacity: 0; transform: translateX(50px); transition: all 1s ease 0.3s; display: flex; justify-content: center; }
+    .section-skills.visible .col-left, .section-skills.visible .col-right { opacity: 1; transform: translateX(0); }
+    .skills-title { font-size: 3.5rem; font-weight: 900; color: #fff; margin-bottom: 40px; line-height: 1.1; }
+    .skills-title span { color: #ffeaa7; font-size: 2rem; display: block; font-weight: 700; margin-top: 5px;}
+    .skill-block { background: var(--white); margin-bottom: 20px; padding: 20px 25px; border-radius: 20px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: transform 0.3s; border-left: 6px solid transparent; cursor: pointer; }
+    .skill-block:hover { transform: translateX(10px) scale(1.02); }
+    .sb-frontend { border-left-color: #6C5CE7; } .sb-3d { border-left-color: #FF9F43; } .sb-backend { border-left-color: #00CEC9; }
+    .sb-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 20px; flex-shrink: 0; background: #f0f0f0; overflow: hidden; }
+    .sb-icon img { width: 60%; height: 60%; object-fit: contain; }
+    .sb-content { flex-grow: 1; }
+    .sb-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .sb-title { font-weight: 800; font-size: 1.1rem; color: var(--text-dark); }
+    .sb-pct { font-weight: 700; color: var(--purple); }
+    .sb-desc { font-size: 0.9rem; color: var(--text-gray); }
+    .mini-progress { width: 100%; height: 6px; background: #eee; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+    .mini-bar { height: 100%; border-radius: 3px; width: 0; transition: width 1.5s ease 0.5s; }
+    .sb-frontend .mini-bar { background: #6C5CE7; } .sb-3d .mini-bar { background: #FF9F43; } .sb-backend .mini-bar { background: #00CEC9; }
+    .skill-image { width: 85%; border-radius: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.3); transform: rotate(-3deg); transition: 0.3s; border: 5px solid rgba(255,255,255,0.2); }
+    .skill-image:hover { transform: rotate(0) scale(1.02); }
+
+    /* 3. ABOUT */
+    .section-about {
+        min-height: 100vh; width: 100%; display: flex; align-items: center; padding: 0 10%;
+        background: linear-gradient(180deg, #6C5CE7 0%, #000000 100%);
+        color: white; position: relative; z-index: 30;
+    }
+    .about-text-col { width: 50%; opacity: 0; transform: translateY(50px); transition: all 1s ease; padding-right: 50px; }
+    .about-img-col { width: 50%; opacity: 0; transform: translateY(50px); transition: all 1s ease 0.2s; position: relative; height: 500px; display: flex; justify-content: center; align-items: center; }
+    .section-about.visible .about-text-col, .section-about.visible .about-img-col { opacity: 1; transform: translateY(0); }
+    .about-title { font-size: 3.5rem; font-weight: 900; margin-bottom: 30px; line-height: 1.1; }
+    .about-title span { color: var(--primary); }
+    .about-desc { font-size: 1.2rem; line-height: 1.8; color: #dcdde1; margin-bottom: 20px; }
+    .gallery-container { width: 400px; height: 500px; position: relative; }
+    .gallery-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 20px; box-shadow: 20px 20px 0px var(--primary); transition: opacity 1s ease-in-out, transform 0.5s; opacity: 0; }
+    .gallery-img.active { opacity: 1; z-index: 2; }
+    .gallery-container:hover .gallery-img.active { transform: scale(1.02) translate(-5px,-5px); box-shadow: 25px 25px 0px white; }
+
+    /* 4. CONTACT */
+    .section-contact {
+        min-height: 100vh; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
+        background: #000000; color: white; text-align: center; position: relative; z-index: 40;
+    }
+    .contact-content { animation: float 6s ease-in-out infinite; }
+    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+    .contact-title { font-size: 4rem; font-weight: 900; margin-bottom: 20px; background: linear-gradient(to right, var(--primary), var(--purple)); -webkit-background-clip: text; color: transparent; }
+    .contact-sub { font-size: 1.5rem; color: #a29bfe; margin-bottom: 50px; }
+    .contact-btn-big {
+        padding: 25px 60px; font-size: 1.5rem; font-weight: 800; color: white; background: var(--primary);
+        border-radius: 50px; text-decoration: none; transition: 0.3s; box-shadow: 0 10px 40px rgba(255, 159, 67, 0.4);
+        display: inline-block; animation: pulse-btn 2s infinite;
+    }
+    @keyframes pulse-btn { 0% { box-shadow: 0 0 0 0 rgba(255, 159, 67, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 159, 67, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 159, 67, 0); } }
+    .contact-btn-big:hover { transform: scale(1.1); animation: none; box-shadow: 0 20px 60px rgba(255, 159, 67, 0.6); }
+    .footer-links { margin-top: 80px; display: flex; gap: 30px; justify-content: center;}
+    .footer-links a { color: var(--text-gray); font-size: 1.2rem; text-decoration: none; transition: 0.3s; padding: 10px; border-bottom: 2px solid transparent; }
+    .footer-links a:hover { color: var(--primary); border-bottom: 2px solid var(--primary); }
+
+    /* NEW FOOTER CREDIT STYLE */
+    .footer-credit {
+        margin-top: 60px;
+        opacity: 0.9;
+        position: relative;
+    }
+    .footer-credit h3 {
+        font-size: 2rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #fff, #a29bfe);
+        -webkit-background-clip: text;
+        color: transparent;
+        letter-spacing: 1px;
+    }
+    .code-icon {
+        display: inline-block;
+        color: var(--primary);
+        font-weight: 900;
+        font-size: 2.2rem;
+        margin-left: 10px;
+        background: none;
+        -webkit-text-fill-color: var(--primary);
+        animation: pulse-icon 2s infinite ease-in-out;
+    }
+    @keyframes pulse-icon {
+        0% { transform: scale(1); text-shadow: 0 0 10px rgba(255, 159, 67, 0.5); }
+        50% { transform: scale(1.2); text-shadow: 0 0 20px rgba(255, 159, 67, 1); }
+        100% { transform: scale(1); text-shadow: 0 0 10px rgba(255, 159, 67, 0.5); }
+    }
+
+
+    .loader { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg-color); z-index: 9999; display: flex; justify-content: center; align-items: center; font-weight: 900; color: var(--primary); font-size: 1.5rem; transition: opacity 0.5s; }
+
+    @media (max-width: 1000px) {
+        .section-hero { padding-top: 100px; text-align: center; padding-left: 0; justify-content: center; }
+        .hero-content { margin: 0 auto; }
+        .section-skills, .section-about { flex-direction: column-reverse; padding: 60px 20px; height: auto; text-align: center;}
+        .col-left, .col-right, .about-text-col, .about-img-col { width: 100%; padding: 0; margin-bottom: 30px; }
+        .gallery-container { width: 90%; margin: 0 auto; height: 400px; }
+        .contact-title { font-size: 3rem; }
+        .footer-credit h3 { font-size: 1.5rem; }
+        #canvas-container { opacity: 0.5; } 
+    }
+
+    /* SOCIAL BAR */
+    .social-bar {
+        position: fixed;
+        left: 60px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .social-link {
+        width: 50px;
+        height: 50px;
+        background: var(--white);
+        border-radius: 12px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: var(--text-dark);
+        text-decoration: none;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+
+    .social-link:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateX(10px) scale(1.1);
+        box-shadow: 0 10px 25px rgba(255, 159, 67, 0.4);
+    }
+
+    .social-link svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    @media (max-width: 1000px) {
+        .social-bar {
+            left: 20px;
+            gap: 15px;
+        }
+        .social-link {
+            width: 45px;
+            height: 45px;
+        }
+    }
+
+
+    /* BACK TO TOP BUTTON */
+    .back-to-top {
+        position: fixed;
+        bottom: 40px;
+        right: 60px;
+        width: 55px;
+        height: 55px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 10px 30px rgba(255, 159, 67, 0.4);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .back-to-top.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .back-to-top:hover {
+        transform: translateY(-5px) scale(1.1);
+        box-shadow: 0 15px 40px rgba(255, 159, 67, 0.6);
+    }
+
+    @media (max-width: 1000px) {
+        .back-to-top {
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+        }
+    }
+
+    /* 2.5. TIMELINE */
+    .section-timeline {
+        min-height: 100vh;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 80px 5%;
+        background: linear-gradient(180deg, #FFFFFF 0%, #000000 100%);
+        position: relative;
+        z-index: 25;
+    }
+
+    .timeline-header {
+        text-align: center;
+        margin-bottom: 80px;
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 1s ease;
+    }
+
+    .section-timeline.visible .timeline-header {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .timeline-title {
+        font-size: 3.5rem;
+        font-weight: 900;
+        color: #2D2D2D;
+        line-height: 1.1;
+        margin-bottom: 10px;
+    }
+
+    .timeline-title span {
+        color: var(--primary);
+        font-size: 2rem;
+        font-weight: 700;
+        display: block;
+        margin-top: 5px;
+    }
+
+    .timeline-container {
+        position: relative;
+        max-width: 1200px;
+        width: 100%;
+    }
+
+    .timeline-line {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(180deg, var(--primary), var(--purple));
+        transform: translateX(-50%);
+        box-shadow: 0 0 20px rgba(255, 159, 67, 0.5);
+    }
+
+    .timeline-item {
+        position: relative;
+        width: 50%;
+        padding: 40px 60px;
+        opacity: 0;
+        transition: all 0.8s ease;
+    }
+
+    .timeline-item.tl-left {
+        left: 0;
+        text-align: right;
+        transform: translateX(-100px);
+    }
+
+    .timeline-item.tl-right {
+        left: 50%;
+        text-align: left;
+        transform: translateX(100px);
+    }
+
+    .section-timeline.visible .timeline-item {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .tl-content {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .timeline-item:hover .tl-content {
+        transform: scale(1.05);
+        border-color: var(--primary);
+        box-shadow: 0 20px 60px rgba(255, 159, 67, 0.3);
+    }
+
+    .tl-year {
+        font-size: 1.8rem;
+        font-weight: 900;
+        color: var(--primary);
+        margin-bottom: 15px;
+        display: inline-block;
+    }
+
+    .tl-heading {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin-bottom: 10px;
+    }
+
+    .tl-desc {
+        font-size: 1rem;
+        color: var(--text-gray);
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+
+    .tl-progress-container {
+        width: 100%;
+        height: 8px;
+        background: #E0E0E0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 10px;
+    }
+
+    .tl-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--purple));
+        border-radius: 10px;
+        width: 0;
+        transition: width 1.5s ease 0.3s;
+        box-shadow: 0 0 15px rgba(255, 159, 67, 0.6);
+    }
+
+    .section-timeline.visible .tl-progress-bar {
+        width: var(--progress-width);
+    }
+
+    .tl-percent {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--purple);
+    }
+
+    .tl-dot {
+        position: absolute;
+        top: 50%;
+        width: 25px;
+        height: 25px;
+        background: var(--primary);
+        border: 5px solid white;
+        border-radius: 50%;
+        transform: translateY(-50%);
+        box-shadow: 0 0 20px rgba(255, 159, 67, 0.8);
+        z-index: 10;
+    }
+
+    .timeline-item.tl-left .tl-dot {
+        right: -72px;
+    }
+
+    .timeline-item.tl-right .tl-dot {
+        left: -72px;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 1000px) {
+        .timeline-line {
+            left: 30px;
+        }
+
+        .timeline-item {
+            width: 100%;
+            padding: 20px 20px 20px 80px;
+            left: 0 !important;
+            text-align: left !important;
+        }
+
+        .timeline-item.tl-left,
+        .timeline-item.tl-right {
+            transform: translateX(-50px);
+        }
+
+        .section-timeline.visible .timeline-item {
+            transform: translateX(0);
+        }
+
+        .timeline-item .tl-dot {
+            left: 18px !important;
+            right: auto !important;
+        }
+
+        .timeline-title {
+            font-size: 2.5rem;
+        }
+
+        .timeline-title span {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="loader" id="loader">Загрузка сайта...</div>
+<div class="logo sound-click" onclick="window.scrollTo(0,0)">M</div>
+<button class="menu-toggle sound-click" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+
+<!-- MUSIC REMOVED -->
+
+<div class="side-menu">
+    <nav class="nav-links">
+        <a href="#home" class="sound-hover" onclick="toggleMenu()">Home</a>
+        <a href="#skills" class="sound-hover" onclick="toggleMenu()">Skills</a>
+        <a href="#about" class="sound-hover" onclick="toggleMenu()">About</a>
+        <a href="#contact" class="sound-hover" onclick="toggleMenu()">Contact</a>
+    </nav>
+</div>
+</div>
+
+<main>
+    <!-- 1. HERO -->
+      <section id="home" class="section-hero">
+        <div class="hero-content">
+            <h1>Hi, my<br>name is<br><span class="name-highlight">Mustafo.</span></h1>
+           <p>Я создаю современные веб-сайты, <br> Боты, Приложениях +41</p>
+            <button class="cta-btn sound-click" onclick="document.getElementById('skills').scrollIntoView()">Связаться со мной</button>
+        </div>
+    </section>
+    <!-- 2. SKILLS -->
+ <section id="skills" class="section-skills">
+        <div class="col-left">
+           <h2 class="skills-title">Технические<br><span>навыки и экспертиза</span></h2>
+            <div class="skill-block sb-frontend sound-hover">
+                <div class="sb-icon"><img src="https://cdn-icons-png.flaticon.com/512/1055/1055666.png" alt="code"></div>
+                <div class="sb-content"><div class="sb-head"><span class="sb-title">Frontend - Разработчик</span><span class="sb-pct">95%</span></div><div class="sb-desc">HTML5, CSS3, JavaScript, React, jQuery</div><div class="mini-progress"><div class="mini-bar" style="width: 95%"></div></div></div>
+            </div>
+            <div class="skill-block sb-3d sound-hover">
+                <div class="sb-icon"><img src="https://cdn-icons-png.flaticon.com/512/1104/1104974.png" alt="3d"></div>
+                <div class="sb-content"><div class="sb-head"><span class="sb-title">Дизайнер</span><span class="sb-pct">60%</span></div><div class="sb-desc">Figma, Photoshop</div><div class="mini-progress"><div class="mini-bar" style="width: 80%"></div></div></div>
+            </div>
+            <div class="skill-block sb-backend sound-hover">
+                <div class="sb-icon"><img src="https://cdn-icons-png.flaticon.com/512/2103/2103601.png" alt="backend"></div>
+                <div class="sb-content"><div class="sb-head"><span class="sb-title">Backend - Разработчик</span><span class="sb-pct">75%</span></div><div class="sb-desc">Node.js, Python, API</div><div class="mini-progress"><div class="mini-bar" style="width: 65%"></div></div></div>
+            </div>
+        </div>
+        <div class="col-right">
+            <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=2072&auto=format&fit=crop" class="skill-image" alt="Workspace">
+        </div>
+    </section>
+
+     <!-- 2.5. TIMELINE -->
+    <section id="timeline" class="section-timeline">
+        <div class="timeline-header">
+            <h2 class="timeline-title">Мой путь<br><span>в программировании</span></h2>
+        </div>
+        
+        <div class="timeline-container">
+            <!-- 2022 -->
+            <div class="timeline-item tl-left">
+                <div class="tl-content">
+                    <div class="tl-year">🤖 2022</div>
+                    <h3 class="tl-heading">Начало пути с AI</h3>
+                    <p class="tl-desc">Первые шаги в нейросетями</p>
+                    <div class="tl-progress-container">
+                        <div class="tl-progress-bar" data-progress="20"></div>
+                    </div>
+                    <span class="tl-percent">20%</span>
+                </div>
+                <div class="tl-dot"></div>
+            </div>
+
+            <!-- 2023 -->
+            <div class="timeline-item tl-right">
+                <div class="tl-content">
+                    <div class="tl-year">💻 2023</div>
+                    <h3 class="tl-heading">Frontend разработчик</h3>
+                    <p class="tl-desc">Изучил HTML, CSS, JavaScript и создал первые проекты</p>
+                    <div class="tl-progress-container">
+                        <div class="tl-progress-bar" data-progress="50"></div>
+                    </div>
+                    <span class="tl-percent">45%</span>
+                </div>
+                <div class="tl-dot"></div>
+            </div>
+
+            <!-- 2024 -->
+            <div class="timeline-item tl-left">
+                <div class="tl-content">
+                    <div class="tl-year">🚀 2024</div>
+                    <h3 class="tl-heading">Новый уровень</h3>
+                    <p class="tl-desc">jQuery, Three.js, React - сложные проекты</p>
+                    <div class="tl-progress-container">
+                        <div class="tl-progress-bar" data-progress="70"></div>
+                    </div>
+                    <span class="tl-percent">60%</span>
+                </div>
+                <div class="tl-dot"></div>
+            </div>
+
+            <!-- 2025 -->
+            <div class="timeline-item tl-right">
+                <div class="tl-content">
+                    <div class="tl-year">🔥 2025</div>
+                    <h3 class="tl-heading">Full-stack мастер</h3>
+                    <p class="tl-desc">Python, Backend, AI эксперт - профессиональный уровень</p>
+                    <div class="tl-progress-container">
+                        <div class="tl-progress-bar" data-progress="90"></div>
+                    </div>
+                    <span class="tl-percent">85%</span>
+                </div>
+                <div class="tl-dot"></div>
+            </div>
+
+            <!-- Вертикальная линия -->
+            <div class="timeline-line"></div>
+        </div>
+    </section>
+
+    <!-- 3. ABOUT -->
+    <section id="about" class="section-about">
+        <div class="about-text-col">
+          <h2 class="about-title">Обо <span>мне</span></h2>
+<p class="about-desc">Я <strong>Мустафо</strong>, мне 15 лет. С 2022 года работаю с нейросетями и создаю веб-проекты.</p>
+<p class="about-desc">Специализируюсь на Frontend-разработке, работе с AI-технологиями и Python. Люблю создавать современные интерфейсы, которые выглядят живыми и работают безупречно.</p>
+<p class="about-desc">Постоянно изучаю новые технологии и совершенствую свои навыки в программировании.</p>
+<p class="about-desc">Открыт для интересных проектов!</p>
+        </div>
+        <div class="about-img-col">
+            <div class="gallery-container">
+                <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=2070" class="gallery-img" alt="Photo 2">
+                <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=2069" class="gallery-img" alt="Photo 3">
+                <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070" class="gallery-img" alt="Photo 4">
+                <img src="https://images.unsplash.com/photo-1605379399642-870262d3d051?q=80&w=2106" class="gallery-img" alt="Photo 5">
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. CONTACT -->
+    <section id="contact" class="section-contact">
+        <div class="contact-content">
+            <h2 class="contact-title">Давайте работать вместе!</h2>
+<p class="contact-sub">Есть идея проекта? Давайте сделаем её в реальность!</p>
+<a href="https://t.me/Mustafo_IT" target="_blank" class="contact-btn-big sound-click">Написать мне 👋</a>
+<div class="footer-links">
+    <a href="https://instagram.com/mustafo_it" class="sound-hover">Instagram</a>
+    <a href="https://t.me/Mustafo_IT" class="sound-hover">Telegram</a>
+   
+</div>
+            <!-- NEW FOOTER CREDIT -->
+            <div class="footer-credit">
+                <h3>Created by Mustafo Programmer 📒 <span class="code-icon">&lt;/&gt;</span></h3>
+            </div>
+            
+        </div>
+    </section>
+</main>
+
+<div id="canvas-container"></div>
+
+<button class="back-to-top sound-click" id="backToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+        <path d="M12 19V5M5 12l7-7 7 7"/>
+    </svg>
+</button>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+
+<script>
+    // 1. MENU
+    function toggleMenu() { document.body.classList.toggle('menu-open'); }
+
+    // 2. AUDIO SYSTEM (No Music, Clicks Only)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, type, dur) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+    }
+    document.querySelectorAll('.sound-click').forEach(el => el.addEventListener('click', () => playTone(600, 'sine', 0.15)));
+    document.querySelectorAll('.sound-hover').forEach(el => el.addEventListener('mouseenter', () => playTone(300, 'triangle', 0.1)));
+
+    // 3. GALLERY
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.gallery-img');
+    setInterval(() => {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add('active');
+    }, 3000);
+
+    // 4. ANIMATION
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                entry.target.querySelectorAll('.mini-bar').forEach(bar => {
+                    const w = bar.style.width; bar.style.width = '0'; setTimeout(() => bar.style.width = w, 100);
+                });
+            }
+        });
+    }, { threshold: 0.2 });
+    document.querySelectorAll('.section-skills, .section-about').forEach(s => observer.observe(s));
+    // 5. TIMELINE ANIMATION
+    const timelineObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                
+                // Animate progress bars
+                entry.target.querySelectorAll('.tl-progress-bar').forEach(bar => {
+                    const progress = bar.getAttribute('data-progress');
+                    bar.style.setProperty('--progress-width', progress + '%');
+                });
+            }
+        });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.section-timeline').forEach(s => timelineObserver.observe(s));
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const cfg = { bg: 0xF9F3E8, primary: 0xFF9F43, rugDark: 0xF3B431, rugLight: 0xFED330, wood: 0xEAD1B4, dark: 0x2D3436, keyBlack: 0x1e272e, cork: 0xCBB398, white: 0xFFFFFF, plant: 0x6AB04C, book1: 0xe74c3c, book2: 0x3498db, book3: 0xf1c40f, bluePic: 0x74b9ff };
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(cfg.bg);
+scene.fog = new THREE.Fog(cfg.bg, 15, 60);
+
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 7, 24);
+camera.lookAt(6, 1, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.SoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+// TEXTURES
+const cvsLeft = document.createElement('canvas'); cvsLeft.width=512; cvsLeft.height=512;
+const ctxLeft = cvsLeft.getContext('2d'); const texLeft = new THREE.CanvasTexture(cvsLeft); texLeft.colorSpace = THREE.SRGBColorSpace;
+const cvsRight = document.createElement('canvas'); cvsRight.width=512; cvsRight.height=512;
+const ctxRight = cvsRight.getContext('2d'); const texRight = new THREE.CanvasTexture(cvsRight); texRight.colorSpace = THREE.SRGBColorSpace;
+
+const fullCode = `const dev = {
+  name: "Мустафошох",
+  age: 15,
+  location: "Таджикистан",
+  skills: ["HTML", "JS", "3D", "Design"],
+  interests: ["Crypto", "Hacking"],
+  status: "Кодирую..."
+};
+
+function createAwesome() {
+  return "Создаю крутые проекты";
+}
+// Clean Code & Modern Design`;
+
+let typeIndex = 0; let lastUpdate = 0;
+
+function drawMonitors() {
+    // --- RIGHT MONITOR: CODE ---
+    ctxRight.fillStyle='#282a36'; ctxRight.fillRect(0,0,512,512); 
+    ctxRight.fillStyle='#44475a'; ctxRight.fillRect(0,0,40,512); 
+    ctxRight.font='bold 24px monospace';
+    const lines = fullCode.substring(0, typeIndex).split('\n');
+    let y = 40;
+    lines.forEach((line, i) => {
+        ctxRight.fillStyle='#6272a4'; ctxRight.fillText(i+1, 10, y);
+        ctxRight.fillStyle='#f8f8f2';
+        if(line.includes('const') || line.includes('function') || line.includes('return')) ctxRight.fillStyle='#ff79c6';
+        if(line.includes('"')) ctxRight.fillStyle='#f1fa8c';
+        if(line.includes('//')) ctxRight.fillStyle='#6272a4';
+        ctxRight.fillText(line, 50, y); 
+        y+=32;
+    });
+    if(Date.now()%1000 < 500) {
+        ctxRight.fillStyle='#50fa7b';
+        const w = ctxRight.measureText(lines[lines.length-1]).width;
+        ctxRight.fillRect(50+w, y-32, 12, 24);
+    }
+    texRight.needsUpdate=true;
+
+    // --- LEFT MONITOR: PREVIEW ---
+    ctxLeft.fillStyle='#ffffff'; ctxLeft.fillRect(0,0,512,512);
+    ctxLeft.fillStyle='#FF9F43'; ctxLeft.font='bold 60px sans-serif'; ctxLeft.textAlign='center'; ctxLeft.fillText('Мустафо📈',256,180);
+    // Button
+    ctxLeft.fillStyle='#FF9F43'; 
+    const bx=156, by=230, bw=200, bh=60, br=30;
+    ctxLeft.beginPath(); ctxLeft.moveTo(bx + br, by); ctxLeft.lineTo(bx + bw - br, by); ctxLeft.quadraticCurveTo(bx + bw, by, bx + bw, by + br); ctxLeft.lineTo(bx + bw, by + bh - br); ctxLeft.quadraticCurveTo(bx + bw, by + bh, bx + bw - br, by + bh); ctxLeft.lineTo(bx + br, by + bh); ctxLeft.quadraticCurveTo(bx, by + bh, bx, by + bh - br); ctxLeft.lineTo(bx, by + br); ctxLeft.quadraticCurveTo(bx, by, bx + br, by); ctxLeft.fill();
+    ctxLeft.fillStyle='white'; ctxLeft.font='bold 30px sans-serif'; ctxLeft.fillText('Кнопка📍', 256, 270);
+    texLeft.needsUpdate=true;
+}
+
+const mat = { white: new THREE.MeshStandardMaterial({color:cfg.white}), wood: new THREE.MeshStandardMaterial({color:cfg.wood}), black: new THREE.MeshStandardMaterial({color:cfg.dark}), keyBlack: new THREE.MeshStandardMaterial({color:cfg.keyBlack}), primary: new THREE.MeshStandardMaterial({color:cfg.primary}), rugDark: new THREE.MeshStandardMaterial({color:cfg.rugDark}), rugLight: new THREE.MeshStandardMaterial({color:cfg.rugLight}), screenLeft: new THREE.MeshBasicMaterial({map:texLeft}), screenRight: new THREE.MeshBasicMaterial({map:texRight}), cork: new THREE.MeshStandardMaterial({color:cfg.cork}), plant: new THREE.MeshStandardMaterial({color:cfg.plant}), paper: new THREE.MeshStandardMaterial({color:0xFFFFFF}), book1: new THREE.MeshStandardMaterial({color:cfg.book1}), book2: new THREE.MeshStandardMaterial({color:cfg.book2}), book3: new THREE.MeshStandardMaterial({color:cfg.book3}), metal: new THREE.MeshStandardMaterial({color:0x95a5a6}), phoneBody: new THREE.MeshStandardMaterial({color:0x2d3436}), phoneScreen: new THREE.MeshStandardMaterial({color:0x000000}), bluePic: new THREE.MeshStandardMaterial({color:cfg.bluePic}) };
+const box = (w,h,d,r,m,x,y,z,s=true) => { const o = new THREE.Mesh(new RoundedBoxGeometry(w,h,d,4,r),m); o.position.set(x,y,z); if(s){o.castShadow=true;o.receiveShadow=true;} return o; };
+
+const roomGroup = new THREE.Group();
+// Shifted to RIGHT (x=6) so text can be on LEFT
+roomGroup.position.set(6, -4, 0); 
+scene.add(roomGroup);
+
+// Floor & Rug
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.ShadowMaterial({ opacity: 0.05 }));
+floor.rotation.x = -Math.PI / 2; roomGroup.add(floor);
+const rugGrp = new THREE.Group(); rugGrp.rotation.y = -0.3; rugGrp.position.set(0, 0, 2);
+rugGrp.add(box(13, 0.1, 9, 0.2, mat.rugDark, 0, 0, 0)); rugGrp.add(box(11, 0.12, 7, 0.2, mat.rugLight, 0, 0.05, 0));
+roomGroup.add(rugGrp);
+
+// Desk
+const desk = new THREE.Group(); desk.rotation.y = -0.2;
+desk.add(box(14, 0.4, 6.5, 0.2, mat.white, 0, 3.8, 0));
+const lg = new THREE.CylinderGeometry(0.25, 0.15, 3.6, 16); const cl = (x,z) => { const l=new THREE.Mesh(lg,mat.wood); l.position.set(x, 1.8, z); l.castShadow=true; return l; };
+desk.add(cl(-6, 2.5)); desk.add(cl(6, 2.5)); desk.add(cl(-6, -2.5)); desk.add(cl(6, -2.5));
+roomGroup.add(desk);
+
+const chair = new THREE.Group(); chair.position.set(1, 0, 5); chair.rotation.y = -0.6;
+chair.add(box(0.1, 2, 0.1, 0, mat.metal, -1.2, 1, 0)); chair.add(box(0.1, 2, 0.1, 0, mat.metal, 1.2, 1, 0));
+chair.add(box(0.1, 2, 0.1, 0, mat.metal, -1.2, 1, 1.2)); chair.add(box(0.1, 2, 0.1, 0, mat.metal, 1.2, 1, 1.2));
+chair.add(box(3, 0.3, 3, 0.5, mat.black, 0, 2.1, 0.6));
+const chairBack = box(3, 2, 0.3, 0.5, mat.white, 0, 3.5, 2); chairBack.rotation.x = -0.2; chair.add(chairBack);
+roomGroup.add(chair);
+
+// Monitors
+const monitors = new THREE.Group(); monitors.position.set(0, 4, -1.5);
+// Left Monitor (Now Preview)
+const m1 = new THREE.Group(); m1.position.set(2, 0, 0); m1.rotation.y = -0.1;
+m1.add(box(0.5, 2, 0.2, 0.05, mat.black, 0, 1, -0.5)); m1.add(box(3, 0.1, 2, 0.2, mat.white, 0, 0, -0.5)); m1.add(box(7, 4, 0.3, 0.2, mat.black, 0, 3.5, 0));
+const s1 = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 3.6), mat.screenLeft); s1.position.set(0, 3.5, 0.16); m1.add(s1); monitors.add(m1);
+// Right Monitor (Now Code)
+const m2 = new THREE.Group(); m2.position.set(-3.5, 0, 0.8); m2.rotation.y = 0.35;
+m2.add(box(0.5, 2, 0.2, 0.05, mat.black, 0, 1, -0.5)); m2.add(box(5, 3.5, 0.3, 0.2, mat.black, 0, 3.2, 0));
+const s2 = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.1), mat.screenRight); s2.position.set(0, 3.2, 0.16); m2.add(s2); monitors.add(m2);
+desk.add(monitors);
+
+// Items
+const pad = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), mat.black); pad.rotation.x = -Math.PI / 2; pad.position.set(3, 4.02, 2); desk.add(pad);
+const kbGrp = new THREE.Group(); kbGrp.position.set(2, 4.05, 2); kbGrp.rotation.y = -0.05; kbGrp.add(box(2.8, 0.1, 1.2, 0.05, mat.keyBlack, 0, 0, 0));
+for(let r=0;r<4;r++){for(let c=0;c<12;c++){const k=new THREE.Mesh(new RoundedBoxGeometry(0.15,0.05,0.15,4,0.02),mat.black);k.position.set(-1.1+c*0.2,0.08,-0.4+r*0.2);k.castShadow=true;kbGrp.add(k);}} desk.add(kbGrp);
+desk.add(box(0.6, 0.1, 1, 0.1, mat.white, 4.5, 4.05, 2));
+
+const books = new THREE.Group(); books.position.set(-5, 4.2, 2); books.rotation.y = 0.2;
+books.add(box(1.8, 0.2, 2.4, 0.05, mat.book3, 0, 0, 0));
+const b2 = box(1.6, 0.2, 2.2, 0.05, mat.book2, 0, 0.2, 0); b2.rotation.y = 0.2; books.add(b2);
+const b3 = box(1.7, 0.2, 2.3, 0.05, mat.book1, 0, 0.4, 0); b3.rotation.y = -0.1; books.add(b3); desk.add(books);
+
+const phone = new THREE.Group(); phone.position.set(5.5, 4.05, 2.5); phone.rotation.y = -0.3;
+phone.add(box(0.8, 0.05, 1.5, 0.1, mat.phoneBody, 0, 0, 0)); phone.add(box(0.7, 0.01, 1.4, 0, mat.phoneScreen, 0, 0.03, 0)); desk.add(phone);
+
+const notebook = new THREE.Group(); notebook.position.set(-2, 4.05, 2.5); notebook.rotation.y = 0.1;
+notebook.add(box(1.5, 0.1, 2, 0.05, mat.black, 0, 0, 0)); notebook.add(box(1.4, 0.02, 1.9, 0, mat.paper, 0, 0.06, 0));
+const pen = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.2, 8), mat.primary); pen.rotation.z = Math.PI / 2; pen.rotation.y = -0.5; pen.position.set(0, 0.1, 0); notebook.add(pen); desk.add(notebook);
+
+const speaker = new THREE.Group(); speaker.position.set(5.5, 4.4, 0.5); speaker.rotation.y = -0.3;
+speaker.add(box(1.2, 1.5, 1.2, 0.1, mat.primary, 0, 0, 0)); const spkCone = new THREE.Mesh(new THREE.CircleGeometry(0.4, 32), mat.white); spkCone.position.set(0, 0, 0.61); speaker.add(spkCone); desk.add(speaker);
+
+const wall = new THREE.Group(); wall.position.set(0, 7.5, -4);
+const board = new THREE.Group(); board.position.set(3, 0.5, 0); board.add(box(5, 3.5, 0.2, 0.2, mat.wood, 0, 0, 0)); board.add(box(4.6, 3.1, 0.1, 0, mat.cork, 0, 0, 0.1));
+const note1 = box(1.2, 1.5, 0.05, 0.02, mat.paper, -1.2, 0.2, 0.2); note1.rotation.z = 0.1; board.add(note1); board.add(box(0.2, 0.2, 0.1, 0.1, mat.primary, -1.2, 0.8, 0.25)); wall.add(board);
+const shelf = new THREE.Group(); shelf.position.set(-4, 2, 0); shelf.add(box(4, 0.2, 1.5, 0.1, mat.white, 0, 0, 0)); shelf.add(box(0.4, 1.5, 1, 0.05, mat.primary, -1, 0.85, 0)); shelf.add(box(0.4, 1.3, 1, 0.05, mat.black, -0.5, 0.75, 0));
+const cactus = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 0.6, 4, 8), mat.plant); cactus.position.set(1, 0.5, 0.2); shelf.add(cactus); wall.add(shelf);
+const picFrame = new THREE.Group(); picFrame.position.set(7, 1.5, 0); picFrame.add(box(3, 2.2, 0.2, 0.1, mat.white, 0, 0, 0));
+const picInner = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.8), mat.bluePic); picInner.position.set(0, 0, 0.11);
+const mnt = new THREE.ConeGeometry(0.6, 1, 4); const m1m = new THREE.Mesh(mnt, mat.white); m1m.position.set(-0.5, -0.4, 0.1); m1m.scale.set(1, 1, 0.1); const m2m = new THREE.Mesh(mnt, mat.white); m2m.position.set(0.4, -0.2, 0.05); m2m.scale.set(1.5, 1.2, 0.1); picInner.add(m1m); picInner.add(m2m); picFrame.add(picInner); wall.add(picFrame); roomGroup.add(wall);
+
+const plantPot = new THREE.Group(); plantPot.position.set(8, -1, 3.5); plantPot.add(box(2, 1.8, 2, 0.5, mat.white, 0, 1, 0)); plantPot.add(box(1.5, 0.1, 1.5, 0.5, mat.black, 0, 1.8, 0));
+[0, 1, 2, 3, 4].forEach(i => { const leaf = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.4, 3.5, 8), mat.plant); leaf.position.set(Math.sin(i) * 0.3, 3.5, Math.cos(i) * 0.3); leaf.scale.set(1,1,0.2); leaf.rotation.set((Math.random()-0.5)*0.5, Math.random()*Math.PI, (Math.random()-0.5)*0.5); plantPot.add(leaf); }); roomGroup.add(plantPot);
+
+const ambient = new THREE.AmbientLight(0xffffff, 0.7); scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xFFEAA7, 1.2); sun.position.set(5, 15, 10); sun.castShadow = true; scene.add(sun);
+const fillLight = new THREE.DirectionalLight(0xFFD3B6, 0.5); fillLight.position.set(-10, 5, 5); scene.add(fillLight);
+
+const ldr = document.getElementById('loader'); setTimeout(() => { ldr.style.opacity = 0; setTimeout(() => ldr.remove(), 500); }, 1000);
+let mouse = { x: 0, y: 0 }; window.addEventListener('mousemove', (e) => { mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1; });
+
+function animate() {
+    requestAnimationFrame(animate);
+    const now = Date.now();
+    if (now - lastUpdate > 80) { 
+        if (typeIndex < fullCode.length) { typeIndex++; drawMonitors(); lastUpdate = now; } 
+        else if (Math.random() > 0.995) { typeIndex = 0; }
+    }
+
+    const scrollPct = window.scrollY / window.innerHeight;
+    let targetRoomY = -4;
+    // Original scroll logic restored: room flies up when scrolled to bottom
+    if(scrollPct < 1) { targetRoomY = -4 + (scrollPct * 16); } else { targetRoomY = 12; }
+    
+    roomGroup.position.y = THREE.MathUtils.lerp(roomGroup.position.y, targetRoomY, 0.1);
+    roomGroup.rotation.y = THREE.MathUtils.lerp(roomGroup.rotation.y, mouse.x * 0.05, 0.05);
+
+    renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
+    if (window.innerWidth < 1000) { roomGroup.position.x = 0; camera.lookAt(0, 1, 0); } else { roomGroup.position.x = 6; camera.lookAt(6, 1, 0); }
+});
+// BACK TO TOP BUTTON
+    const backToTopBtn = document.getElementById('backToTop');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 500) {
+            backToTopBtn.classList.add('visible');
+        } else {
+            backToTopBtn.classList.remove('visible');
+        }
+    });
+</script>
+</body>
+</html>
